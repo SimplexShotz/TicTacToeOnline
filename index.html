@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Tic-Tac-Toe Online</title>
+    <style>
+      * {
+        font-family: Helvetica;
+      }
+      body {
+        margin: 0px;
+        padding: 0px;
+      }
+      h1 {
+        font-size: 20pt;
+      }
+      #contents {
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+  <div id="contents">
+    <h1>Tic-Tac-Toe</h1>
+  </div>
+  
+  <script src="https://www.gstatic.com/firebasejs/5.7.1/firebase.js"></script>
+  <script>
+    // Initialize Firebase
+    var config = {
+      apiKey: "AIzaSyA2xMHFNxViz1_JCxuUuKOGFfu5rwkLVLE",
+      authDomain: "tictactoe-fa63c.firebaseapp.com",
+      databaseURL: "https://tictactoe-fa63c.firebaseio.com",
+      projectId: "tictactoe-fa63c",
+      storageBucket: "",
+      messagingSenderId: "349122681856"
+    };
+    firebase.initializeApp(config);
+  </script>
+  </body>
+</html>
