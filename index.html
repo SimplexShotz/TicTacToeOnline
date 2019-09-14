@@ -2,39 +2,283 @@
 <html>
   <head>
     <title>Tic-Tac-Toe Online</title>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700,900&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/6.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/6.6.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/6.6.1/firebase-database.js"></script>
     <style>
       * {
-        font-family: Helvetica;
+        font-family: "Roboto";
+        font-weight: 300;
       }
       body {
         margin: 0px;
         padding: 0px;
+        background-image: linear-gradient(rgb(255, 255, 255), rgb(250, 250, 250));
+        display: none;
       }
       h1 {
         font-size: 20pt;
       }
       #contents {
+        background-color: rgba(0, 0, 0, 0);
         text-align: center;
+        padding: 50px;
+        margin: 0px 25% 0px 25%;
+        width: calc(50% - 100px);
+      }
+      .loader {
+        border: 16px solid rgb(250, 250, 250);
+        border-top: 16px solid rgb(50, 200, 255);
+        border-radius: 50%;
+        width: 120px;
+        height: 120px;
+        animation: spin 1s linear infinite;
+        margin-left: calc(50% - 60px);
+        margin-top: 100px;
+      }
+      
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      button {
+        border: none;
+        border-radius: 10px;
+        background-color: rgb(100, 200, 225);
+        color: rgb(255, 255, 255);
+        padding: 10px;
+        font-weight: 500;
+      }
+      button:focus {
+        outline: none;
+      }
+      .game-button-container {
+        float: right;
+      }
+      .game-button-cancel {
+        background-color: rgb(225, 125, 50);
+        color: rgb(255, 255, 255);
+        margin-left: 5px;
+      }
+      button:disabled {
+        background-color: rgb(225, 225, 225);
+        color: rgb(50, 50, 50);
+      }
+      .game {
+        border-radius: 10px;
+        background-color: rgb(240, 240, 240);
+        color: rgb(50, 50, 50);
+        font-weight: 400;
+        padding: 10px;
+        text-align: left;
+        margin-bottom: 10px;
+      }
+      .game-text-container {
+        padding: 10px;
+      }
+      .clear {
+        background-color: rgba(0, 0, 0, 0);
+        height: 0px;
+        width: 0px;
+        clear: both;
       }
     </style>
   </head>
-  <body>
-  <div id="contents">
-    <h1>Tic-Tac-Toe</h1>
+  
+  <div id="load">
+    <div class="loader"></div>
   </div>
   
-  <script src="https://www.gstatic.com/firebasejs/5.7.1/firebase.js"></script>
+  <body>
+  <div id="contents">
+    <h1>Tic-Tac-Toe Online</h1>
+    <div id="games"></div>
+    <button id="new-game" onclick="newGame()">NEW GAME</button>
+  </div>
+  
   <script>
     // Initialize Firebase
-    var config = {
-      apiKey: "AIzaSyA2xMHFNxViz1_JCxuUuKOGFfu5rwkLVLE",
-      authDomain: "tictactoe-fa63c.firebaseapp.com",
-      databaseURL: "https://tictactoe-fa63c.firebaseio.com",
-      projectId: "tictactoe-fa63c",
+    var firebaseConfig = {
+      apiKey: "AIzaSyAeCB7i2NTmT7_sgVHFGZPV5fnx3FN7OWY",
+      authDomain: "tic-tac-toe-online-2b9f4.firebaseapp.com",
+      databaseURL: "https://tic-tac-toe-online-2b9f4.firebaseio.com",
+      projectId: "tic-tac-toe-online-2b9f4",
       storageBucket: "",
-      messagingSenderId: "349122681856"
+      messagingSenderId: "840915838647",
+      appId: "1:840915838647:web:a89fcbdf6238bcafa28f32"
     };
-    firebase.initializeApp(config);
+    firebase.initializeApp(firebaseConfig);
+    var database = firebase.database();
+    var ref = {
+      games: database.ref("games")
+    };
+    
+    var currentRoom = "";
+    var game = {};
+    var waiting = true;
+    
+    ref.games.on("value", function(data) {
+      var d = data.val();
+      var pl = 0;
+      if (currentRoom) {
+        var kicked = false;
+        if (d[currentRoom]) {
+          game = d[currentRoom];
+          if (game.kicked) {
+            kicked = true;
+          }
+        } else {
+          kicked = true;
+        }
+        if (kicked) {
+          alert("You've been timed out.");
+          alert("TODO: go back to home screen?");
+          if (d[currentRoom]) {
+            ref.games.child(currentRoom).remove();
+          }
+          currentRoom = "";
+          loadGames();
+          document.getElementById("new-game").disabled = false;
+        }
+      }
+      if (waiting) {
+        loadGames();
+      }
+      checkGames();
+    });
+    
+    function newGame() {
+      document.getElementById("new-game").disabled = true;
+      ref.games.once("value", function(data) {
+        var d = data.val();
+        if (d === null) {
+          d = {};
+        }
+        var rn = 0;
+        var n = {};
+        for (var i in d) {
+          if (i.split(" ")[0] === "Tic-Tac-Toe" && i.split(" ")[1] === "Room" && Number(i.split(" ")[2]).toString !== "NaN") {
+            n[Number(i.split(" ")[2])] = Number(i.split(" ")[2]);
+          }
+        }
+        var i = 1;
+        while (rn === 0) {
+          if (!n[i]) {
+            rn = i;
+            break;
+          }
+          i++;
+        }
+        var gn = prompt("Enter a name for the game room.", "Tic-Tac-Toe Room " + rn);
+        if (gn && !d[gn]) {
+          currentRoom = gn;
+          var dt = new Date().getTime();
+          game = {
+            board: [["", "", ""], ["", "", ""], ["", "", ""]],
+            players: ["TODO: add player name"],
+            created: dt,
+            updated: dt,
+            kicked: false
+          };
+          d[gn] = {
+            board: [["", "", ""], ["", "", ""], ["", "", ""]],
+            players: ["TODO: add player name"],
+            created: dt,
+            updated: dt,
+            kicked: false
+          };
+          ref.games.set(d);
+        } else if (d[gn]) {
+          alert("A game with that room name already exists!");
+          document.getElementById("new-game").disabled = false;
+        } else {
+          document.getElementById("new-game").disabled = false;
+        }
+      });
+    }
+    
+    function joinGame() {
+      
+    }
+    
+    function cancelGame() {
+      
+    }
+    
+    function checkGames() {
+      ref.games.once("value", function(data) {
+        var d = data.val();
+        var dt = new Date().getTime();
+        for (var i in d) {
+          // 2 minute timeout:
+          var to = 0.1;
+          if (d[i] && d[i].kicked == false && dt - d[i].updated >= (to * 60 * 1000)) {
+            ref.games.child(i).child("kicked").set(true);
+            setTimeout(function() {
+              ref.games.once("value", function(data) {
+                var td = data.val();
+                if (td[i] && td[i].kicked) {
+                  ref.games.child(i).remove();
+                }
+              });
+            }, 5000);
+          } else if (d[i].kicked && (dt - d[i].updated >= (to * 60 * 1000) || !d[i].updated)) {
+            ref.games.child(i).remove();
+          }
+        }
+      });
+    }
+    
+    function loadGames() {
+      checkGames();
+      document.getElementById("games").innerHTML = "";
+      ref.games.once("value", function(data) {
+        var d = data.val();
+        for (var i in d) {
+          if (d[i].kicked == false) {
+            // Player count:
+            var pl = 0;
+            for (var j in d[i].players) {
+              pl++;
+            }
+            // Button:
+            var button = "";
+            if (currentRoom && currentRoom === i) {
+              button = "<button class='game-button-waiting' disabled>WAITING...</button><button class='game-button-cancel' onclick='cancelGame()'>CANCEL</button>";
+            } else if (currentRoom && currentRoom !== i) {
+              button = "<button class='game-button-join' disabled>JOIN</button>";
+            } else if (pl >= 2) {
+              button = "<button class='game-button-full' disabled>FULL</button>";
+            } else {
+              button = "<button class='game-button-join' onclick='joinGame()'>JOIN</button>";
+            }
+            // Game name:
+            var gn = i;
+            // Add to page:
+            document.getElementById("games").innerHTML += "<div class='game'><div class='game-text-container'>" + gn + "</div><div class='game-button-container'>" + button + "</div><div class='clear'></div></div>"
+          }
+        }
+      });
+      // add games based off data in d
+    }
+    
+    window.onload = function() {
+      // Add the games to the games list:
+      loadGames();
+      
+      // Set contents height:
+      if (document.getElementById("contents").offsetHeight < window.innerHeight) {
+        document.getElementById("contents").style.height = (window.innerHeight - 100) + "px";
+      }
+      
+      document.getElementById("load").style.display = "none";
+      document.body.style.display = "block";
+    }
   </script>
   </body>
 </html>
