@@ -216,7 +216,7 @@
         var dt = new Date().getTime();
         for (var i in d) {
           // 2 minute timeout:
-          var to = 0.1;
+          var to = 2;
           if (d[i] && d[i].kicked == false && dt - d[i].updated >= (to * 60 * 1000)) {
             ref.games.child(i).child("kicked").set(true);
             setTimeout(function() {
