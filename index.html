@@ -98,7 +98,7 @@
   <div id="contents">
     <h1>Tic-Tac-Toe Online</h1>
     <div id="games"></div>
-    <button id="new-game" onclick="newGame()">NEW GAME</button>
+    <button id="new-game" onclick="newGame()" disabled>NEW GAME</button>
   </div>
   
   <script>
@@ -115,9 +115,11 @@
     firebase.initializeApp(firebaseConfig);
     var database = firebase.database();
     var ref = {
-      games: database.ref("games")
+      games: database.ref("games"),
+      players: database.ref("players")
     };
     
+    var playerName = "";
     var currentRoom = "";
     var game = {};
     var waiting = true;
@@ -233,6 +235,10 @@
         }
       });
     }
+    // Refresh every 10 seconds:
+    setInterval(function() {
+      checkGames();
+    }, 10 * 1000);
     
     function loadGames() {
       checkGames();
@@ -264,12 +270,33 @@
           }
         }
       });
-      // add games based off data in d
     }
     
     window.onload = function() {
-      // Add the games to the games list:
-      loadGames();
+      ref.players.once("value", function(data) {
+        var d = data.val();
+        while (playerName === "") {
+          var tempName = prompt("Enter a player name.");
+          if (tempName && tempName.length >= 3 && tempName.length <= 16) {
+            var valid = true;
+            for (var i in d) {
+              if (tempName === i) {
+                alert("A player with that name already exists!");
+                valid = false;
+                break;
+              }
+            }
+            if (valid) {
+              playerName = tempName;
+              ref.players.child(playerName).set(true);
+              document.getElementById("new-game").disabled = false;
+              loadGames();
+            }
+          } else {
+            alert("Your player name must between 3 and 16 characters long.");
+          }
+        }
+      });
       
       // Set contents height:
       if (document.getElementById("contents").offsetHeight < window.innerHeight) {
