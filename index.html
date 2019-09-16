@@ -138,8 +138,9 @@
           kicked = true;
         }
         if (kicked) {
-          alert("You've been timed out.");
-          alert("TODO: go back to home screen?");
+          // [TODO]: figure out why this fires twice (maybe move inside d[currentRoom] if)
+          alert("You've been kicked from your room.");
+          // [TODO]: go back to home screen?
           if (d[currentRoom]) {
             ref.games.child(currentRoom).remove();
           }
@@ -182,14 +183,14 @@
           var dt = new Date().getTime();
           game = {
             board: [["", "", ""], ["", "", ""], ["", "", ""]],
-            players: ["TODO: add player name"],
+            players: [playerName],
             created: dt,
             updated: dt,
             kicked: false
           };
           d[gn] = {
             board: [["", "", ""], ["", "", ""], ["", "", ""]],
-            players: ["TODO: add player name"],
+            players: [playerName],
             created: dt,
             updated: dt,
             kicked: false
@@ -209,7 +210,16 @@
     }
     
     function cancelGame() {
-      
+      var i = currentRoom;
+      ref.games.child(i).child("kicked").set(true);
+      setTimeout(function() {
+        ref.games.once("value", function(data) {
+          var td = data.val();
+          if (td[i] && td[i].kicked) {
+            ref.games.child(i).remove();
+          }
+        });
+      }, 5000);
     }
     
     function checkGames() {
